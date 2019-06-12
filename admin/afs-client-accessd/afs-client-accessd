@@ -522,6 +522,7 @@ my @ORIGINAL_ARGV;
 my $SIGNAL_SHUTDOWN = 0;
 my $SIGNAL_CONFIG = 0;
 my $SIGNAL_CHILD = 0;
+my $SIGNAL_FORCE_EXPORT = 0;
 my $SIGNALLED = 0;
 
 # globals used by sqlldr
@@ -827,6 +828,14 @@ sighup
 	trace();
 	$SIGNALLED = 1;
 	$SIGNAL_CONFIG = 1;
+}
+
+sub
+sigusr1
+{
+	trace();
+	$SIGNALLED = 1;
+	$SIGNAL_FORCE_EXPORT = 1;
 }
 
 # open a connection to the configured Oracle database
@@ -1387,6 +1396,8 @@ checksignals()
 			d("Got SIGCHLD");
 		} elsif ($SIGNAL_CONFIG) {
 			d("Got SIGHUP");
+		} elsif ($SIGNAL_FORCE_EXPORT) {
+			d("Got SIGUSR1");
 		} else {
 			d("Got SIGALRM");
 		}
@@ -1432,7 +1443,7 @@ checksignals()
 
 	d("Checking for db rollover: $next_dbname vs $CUR_DBNAME");
 
-	if ($next_dbname ne $CUR_DBNAME) {
+	if (($next_dbname ne $CUR_DBNAME) or $SIGNAL_FORCE_EXPORT) {
 		# the database name changed (i.e., it's a new day)
 		# so, dump the current data to the non-temporary filename, and create a
 		# new database and open it, and start collecting to that
@@ -1471,6 +1482,7 @@ checksignals()
 	$SIGNAL_SHUTDOWN = 0;
 	$SIGNAL_CONFIG = 0;
 	$SIGNAL_CHILD = 0;
+	$SIGNAL_FORCE_EXPORT = 0;
 	$SIGNALLED = 0;
 }
 
@@ -1715,6 +1727,7 @@ main()
 	$SIG{ALRM} = \&sigalrm;
 	$SIG{CHLD} = \&sigchld;
 	$SIG{HUP} = \&sighup;
+	$SIG{USR1} = \&sigusr1;
 	alarm(ALARM_INTERVAL);
 
 	$CUR_DBNAME = get_dbname();
