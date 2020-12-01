@@ -103,11 +103,39 @@ mysql database called "cellcc" on host db.example.com using port 3306.
 
 The username and password to use when connecting to the B<db/ro/dsn> database.
 
+=item B<db/ro/options>
+
+This optional directive can be used to add / alter the settings to be used when
+contacting the database. For example, the admin can specify the timeout to use
+when reading or connecting to the B<db/ro/dsn> database. For the MySQL driver,
+the following timeout options are available:
+
+- mysql_connect_timeout
+- mysql_read_timeout
+- mysql_write_timeout
+
+In the following example, requests to the server will timeout after 5 seconds:
+
+db: {
+  ro: {
+    options: {
+      mysql_connect_timeout: 5,
+      mysql_read_timeout: 5,
+    },
+  },
+},
+
 =item B<db/rw/dsn>, B<db/rw/user>, B<db/rw/pass>
 
 These are the same as their B<db/ro> equivalents, but for read-write database
 access. B<db/rw/dsn> is optional, and will default to the value specified in
 B<db/ro/dsn>.
+
+=item B<db/rw/options>
+
+These are the same as their B<db/ro> equivalents, but for the read-write
+database. If not specified, this directive will default to the value specified
+in B<db/ro/options>.
 
 =item B<cells/><I<cell>>B</dst-cells>
 

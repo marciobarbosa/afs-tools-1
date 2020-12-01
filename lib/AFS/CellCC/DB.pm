@@ -66,22 +66,54 @@ _connect($$$$) {
     return $dbh;
 }
 
+# Set timeout to 5 minutes if not specified by the admin
+sub
+_set_db_timeout($) {
+    my ($opts) = @_;
+
+    my $timeout = 300;
+    # In certain situations (e.g. packet loss), requests to the MySQL database
+    # may hang indefinitely. To avoid this undesirable behavior, force the
+    # following types of requests to timeout after a given number of seconds.
+    # If not specified by the admin, set the default timeout to 5 minutes. Note
+    # that mysql-specific directives are ignored by other drivers.
+    if (!exists($opts->{'mysql_connect_timeout'})) {
+        $opts->{'mysql_connect_timeout'} = $timeout;
+    }
+    if (!exists($opts->{'mysql_read_timeout'})) {
+        $opts->{'mysql_read_timeout'} = $timeout;
+    }
+    if (!exists($opts->{'mysql_write_timeout'})) {
+        $opts->{'mysql_write_timeout'} = $timeout;
+    }
+}
+
 # Connect to the db with a read/write connection
 sub
 connect_rw() {
+    my %opts = %{ config_get('db/rw/options') };
+
+    $opts{AutoCommit} = 0;
+    _set_db_timeout(\%opts);
+
     return _connect(config_get('db/rw/dsn'),
                     config_get('db/rw/user'),
                     config_get('db/rw/pass'),
-                    { AutoCommit => 0});
+                    \%opts);
 }
 
 # Connect to the db with a readonly connection
 sub
 connect_ro() {
+    my %opts = %{ config_get('db/ro/options') };
+
+    $opts{ReadOnly} = 1;
+    _set_db_timeout(\%opts);
+
     return _connect(config_get('db/ro/dsn'),
                     config_get('db/ro/user'),
                     config_get('db/ro/pass'),
-                    { ReadOnly => 1 });
+                    \%opts);
 }
 
 # Run the given code with a read/write db connection. Use like so:
